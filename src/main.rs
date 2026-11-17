@@ -1,5 +1,5 @@
 use std::io::{Read, Write}; // Read gives us the ability to read bytes from a connection. Write gives us the ability to send bytes.
-use std::net::TcpListener; // TcpListener lets us accept incoming TCP connections.
+use std::net::TcpListener; // TcpListener lets us accept incoming TCP connections. TCP is a byte stream. A single read() is not guaranteed to receive an entire HTTP request. It might receive only part of it.
 
 fn main() {
     let host: &str = "127.0.0.1"; // 127.0.0.1 is the loopback address. It means the server is listening for connections from the same machine.
@@ -8,20 +8,21 @@ fn main() {
     let address = format!("{}:{}", host, port);
 
     // Create the TCP Listening socket
-    let listener = TcpListener::bind(&address).unwrap();//bind() attempts to reserve the requested address and port for our listening socket.unwrap() means: if this operation fails, panic and stop the program.
+    let listener = TcpListener::bind(&address).unwrap(); //bind() attempts to reserve the requested address and port for our listening socket.unwrap() means: if this operation fails, panic and stop the program.
 
     println!("Rust HTTP Server started!");
     println!("Listening on http://{}", address);
 
     // Wait for incoming client connection
-    for connection in listener.incoming() {// connection is the loop variable. Each time through the loop, listener.incoming() waits for and accepts another TCP connection, yielding a Result<TcpStream, std::io::Error>. So connection.unwrap() gets the TcpStream when accepting succeeds, or panics if it fails.
+    for connection in listener.incoming() {
+        // connection is the loop variable. Each time through the loop, listener.incoming() waits for and accepts another TCP connection, yielding a Result<TcpStream, std::io::Error>. So connection.unwrap() gets the TcpStream when accepting succeeds, or panics if it fails.
         let mut stream = connection.unwrap();
 
         println!("Client connected!");
 
-        let mut buffer = [0u8; 4096];// This creates an array of 4096 bytes, initialized to zero. mut -Because the socket read operation needs permission to modify the array by filling it with received bytes.
+        let mut buffer = [0u8; 4096]; // This creates an array of 4096 bytes, initialized to zero. mut -Because the socket read operation needs permission to modify the array by filling it with received bytes.
 
-        let bytes_read = stream.read(&mut buffer).unwrap(); // The read() method receives a mutable reference to our buffer. The operating system receives network data, and the Rust standard library makes the available bytes accessible to our program. The return value tells us how many bytes were read.
+        let bytes_read: usize = stream.read(&mut buffer).unwrap(); // The read() method receives a mutable reference to our buffer. The operating system receives network data, and the Rust standard library makes the available bytes accessible to our program. The return value tells us how many bytes were read.
 
         println!("Received {} bytes", bytes_read);
 
